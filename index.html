@@ -1,0 +1,548 @@
+<title>Калькулятор UX/UI-проєкту</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Unbounded:wght@500;700&display=swap">
+<style>
+  :root {
+    --bg: #F8F5FB;
+    --surface: #FFFFFF;
+    --surface2: #F1ECF7;
+    --line: #E0D7EB;
+    --text: #1C1932;
+    --muted: #645E82;
+    --accent: #FF00E5;
+    --accent-ink: #1C1932;
+    --accent-text: #B000A0;
+    --bar: #CBBEDD;
+    --focus: #B000A0;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0F0E17;
+      --surface: #171625;
+      --surface2: #1F1D30;
+      --line: #2C2A44;
+      --text: #EEECFA;
+      --muted: #A09CC0;
+      --accent-ink: #0F0E17;
+      --accent-text: #FF5BEF;
+      --bar: #3F3B66;
+      --focus: #FF5BEF;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0F0E17;
+    --surface: #171625;
+    --surface2: #1F1D30;
+    --line: #2C2A44;
+    --text: #EEECFA;
+    --muted: #A09CC0;
+    --accent-ink: #0F0E17;
+    --accent-text: #FF5BEF;
+    --bar: #3F3B66;
+    --focus: #FF5BEF;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    font-variant-numeric: tabular-nums;
+  }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .wrap {
+    max-width: 1080px;
+    margin-inline: auto;
+    padding-inline: 16px;
+    padding-block: 32px 112px;
+  }
+  header.top { display: grid; gap: 10px; max-width: 62ch; margin-bottom: 8px; }
+  .eyebrow {
+    margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent-text);
+  }
+  h1 {
+    margin: 0; font-family: "Unbounded", "Arial Black", system-ui, sans-serif;
+    font-weight: 700; font-size: clamp(1.5rem, 4.6vw, 2.1rem); line-height: 1.15;
+    text-wrap: balance;
+  }
+  .lede { margin: 0; color: var(--muted); }
+
+  .grid { display: grid; gap: 24px; align-items: start; }
+  @media (min-width: 900px) {
+    .grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 40px; }
+    .result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); }
+    .dock { display: none !important; }
+    .wrap { padding-block-end: 48px; }
+  }
+
+  .block { padding-block: 24px; border-top: 1px solid var(--line); display: grid; gap: 16px; }
+  .block:first-child { border-top: 0; }
+  h2 {
+    margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .sub { margin: -8px 0 0; color: var(--muted); font-size: 13px; }
+
+  .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .field { display: grid; gap: 6px; align-content: start; }
+  .field label { font-weight: 600; font-size: 13px; }
+  .field small { color: var(--muted); font-size: 12px; }
+  input[type="number"] {
+    width: 100%; font: inherit; font-variant-numeric: tabular-nums; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; min-height: 42px;
+  }
+  input[type="number"]:hover { border-color: var(--muted); }
+
+  .seg-label { font-weight: 600; font-size: 13px; margin-bottom: 8px; display: block; }
+  .seg { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+  .seg button {
+    font: inherit; text-align: left; color: var(--text); cursor: pointer;
+    background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; display: grid; gap: 2px; align-content: start;
+  }
+  .seg button:hover { border-color: var(--muted); }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface2); border-color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .seg .n { font-size: 13px; font-weight: 600; }
+  .seg .k { font-size: 12px; color: var(--muted); }
+  .seg button[aria-pressed="true"] .k { color: var(--accent-text); font-weight: 700; }
+
+  .rows { display: grid; }
+  .row {
+    display: grid; grid-template-columns: auto 1fr auto; column-gap: 12px; row-gap: 6px;
+    align-items: center; padding-block: 10px; border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: 0; }
+  .row .name { cursor: pointer; font-weight: 600; }
+  .row .hint { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+  .row .val { font-weight: 700; text-align: right; min-width: 4.5ch; }
+  .row.off .name, .row.off .val { color: var(--muted); font-weight: 500; }
+  .row .bar { grid-column: 2 / 4; height: 3px; border-radius: 2px; overflow: hidden; }
+  .row .bar i { display: block; height: 100%; width: 0; background: var(--bar); border-radius: 2px; transition: width .25s ease; }
+  .row.nu .val { font-size: 13px; font-weight: 600; color: var(--accent-text); }
+  .row.nu.off .val { color: var(--muted); font-weight: 500; }
+
+  input.switch {
+    appearance: none; -webkit-appearance: none; margin: 0; cursor: pointer;
+    width: 40px; height: 24px; border-radius: 12px; background: var(--line);
+    position: relative; transition: background .2s ease; flex: none;
+  }
+  input.switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.35);
+    transition: transform .2s ease;
+  }
+  input.switch:checked { background: var(--accent); }
+  input.switch:checked::after { transform: translateX(16px); background: #fff; }
+
+  details.norms { border-top: 1px solid var(--line); padding-block: 20px; }
+  details.norms summary {
+    cursor: pointer; font-weight: 700; list-style: none; display: flex;
+    justify-content: space-between; align-items: center; gap: 12px;
+  }
+  details.norms summary::-webkit-details-marker { display: none; }
+  details.norms summary::after { content: "+"; font-size: 20px; color: var(--accent-text); line-height: 1; }
+  details.norms[open] summary::after { content: "–"; }
+  .norms-body { display: grid; gap: 24px; margin-top: 16px; }
+  .norms-body p { margin: 0; color: var(--muted); font-size: 13px; }
+  .ngroup { display: grid; gap: 4px; }
+  .ngroup h3 {
+    margin: 0 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .nrow {
+    display: grid; grid-template-columns: minmax(0, 1fr) 88px 88px; gap: 8px;
+    align-items: center; padding-block: 4px;
+  }
+  .nrow.one { grid-template-columns: minmax(0, 1fr) 88px; }
+  .nrow .nm { font-size: 13px; }
+  .nrow .nm small { display: block; color: var(--muted); font-size: 11.5px; }
+  .nrow.head { font-size: 11.5px; color: var(--muted); }
+  .nrow.head span:not(:first-child) { text-align: center; }
+  .nrow input[type="number"] { min-height: 36px; padding: 6px 8px; text-align: center; }
+  .nwrap { position: relative; }
+  .nwrap i {
+    position: absolute; right: 22px; top: 50%; transform: translateY(-50%);
+    font-style: normal; color: var(--muted); font-size: 12px; pointer-events: none;
+  }
+  .gloss { display: grid; gap: 2px; padding-block: 8px; border-bottom: 1px solid var(--line); }
+  .gloss:last-child { border-bottom: 0; }
+  .gloss dt { font-weight: 700; font-size: 13.5px; }
+  .gloss dd { margin: 0; color: var(--muted); font-size: 13px; }
+  .btn {
+    font: inherit; font-weight: 600; cursor: pointer; color: var(--text);
+    background: transparent; border: 1px solid var(--line); border-radius: 8px;
+    padding: 9px 14px; justify-self: start;
+  }
+  .btn:hover { border-color: var(--muted); }
+
+  .result {
+    background: var(--surface2); border: 1px solid var(--line); border-radius: 14px;
+    padding: 24px 20px; display: grid; gap: 18px;
+  }
+  .res-label { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .price {
+    margin: 0; font-family: "Unbounded", "Arial Black", system-ui, sans-serif;
+    font-weight: 700; font-size: clamp(2.2rem, 9vw, 3rem); line-height: 1.05;
+    color: var(--accent-text); overflow-wrap: anywhere;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--muted); font-size: 13px; }
+  .meta b { color: var(--text); font-weight: 700; }
+  .flag {
+    display: none; margin: 0; padding: 8px 10px; border-radius: 8px; font-size: 13px;
+    background: var(--surface); border: 1px solid var(--accent); color: var(--text);
+  }
+  .flag.show { display: block; }
+  dl.brk { margin: 0; display: grid; }
+  dl.brk div {
+    display: flex; justify-content: space-between; gap: 12px; padding-block: 7px;
+    border-bottom: 1px solid var(--line); font-size: 13.5px;
+  }
+  dl.brk div:last-child { border-bottom: 0; }
+  dl.brk dt { color: var(--muted); }
+  dl.brk dd { margin: 0; font-weight: 700; text-align: right; }
+  dl.brk div.sum dt { color: var(--text); font-weight: 600; }
+  .fine { margin: 0; font-size: 12.5px; color: var(--muted); }
+
+  .dock {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+    background: var(--accent); color: var(--accent-ink);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  }
+  .dock .dl { font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .dock .dp { font-family: "Unbounded", "Arial Black", system-ui, sans-serif; font-weight: 700; font-size: 1.35rem; }
+  .dock .dh { font-size: 12px; font-weight: 600; }
+
+  @media (prefers-reduced-motion: reduce) {
+    input.switch, input.switch::after, .row .bar i { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <p class="eyebrow">UX/UI · розрахунок вартості</p>
+    <h1>Калькулятор проєкту</h1>
+    <p class="lede">Вкажи ставку й кількість екранів, обери що входить у роботу — ціна порахується сама. Усі зміни лишаються тільки в твоєму браузері: ніхто інший їх не бачить, оригінал не змінюється.</p>
+  </header>
+
+  <div class="grid">
+    <main>
+      <section class="block">
+        <h2>Проєкт</h2>
+        <div class="fields">
+          <div class="field"><label for="f-rate">Ставка, $/год</label><input id="f-rate" type="number" inputmode="decimal" min="0" step="any" data-path="rate"><small>приклад — постав свою</small></div>
+          <div class="field"><label for="f-screens">Унікальні екрани</label><input id="f-screens" type="number" inputmode="decimal" min="0" step="1" data-path="screens"><small>різні за структурою, не адаптиви</small></div>
+          <div class="field"><label for="f-comps">Конкуренти для аналізу</label><input id="f-comps" type="number" inputmode="decimal" min="0" step="1" data-path="comps"><small>зазвичай 3–5</small></div>
+          <div class="field"><label for="f-fixed">Фіксовані витрати, $</label><input id="f-fixed" type="number" inputmode="decimal" min="0" step="any" data-path="fixed"><small>ліцензії, шрифти, стоки</small></div>
+          <div class="field"><label for="f-min">Мінімальний чек, $</label><input id="f-min" type="number" inputmode="decimal" min="0" step="any" data-path="min"><small>нижче цієї суми не беру</small></div>
+        </div>
+        <div>
+          <span class="seg-label" id="l-cx">Складність</span>
+          <div class="seg" id="seg-cx" role="group" aria-labelledby="l-cx"></div>
+        </div>
+        <div>
+          <span class="seg-label" id="l-ur">Терміновість</span>
+          <div class="seg" id="seg-ur" role="group" aria-labelledby="l-ur"></div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2>Що входить у проєкт</h2>
+        <p class="sub">Довжина смужки — частка годин модуля.</p>
+        <div class="rows" id="scope"></div>
+      </section>
+
+      <section class="block">
+        <h2>Нюанси</h2>
+        <div class="rows" id="nuances"></div>
+      </section>
+
+      <details class="norms" id="norms">
+        <summary>Норми й коефіцієнти</summary>
+        <div class="norms-body" id="norms-body"></div>
+      </details>
+
+      <details class="norms" id="glossary">
+        <summary>Що означають ці терміни</summary>
+        <div class="norms-body">
+          <div class="ngroup">
+            <h3>Коефіцієнти</h3>
+            <div class="gloss"><dt>Кс — складність</dt><dd>Множник за тип проєкту: простий лендінг рахується як є (1,0), e-commerce чи багатосторінковий сайт — дорожче (1,2), складний продукт з великою кількістю станів — ще дорожче (1,5). Множиться на весь обсяг годин.</dd></div>
+            <div class="gloss"><dt>Кт — терміновість</dt><dd>Множник за стислий дедлайн: стандартний термін нічого не змінює (1,0), менше двох тижнів дорожчає на чверть (1,25), менше тижня — у півтора раза (1,5). Компенсує роботу без інших проєктів паралельно.</dd></div>
+            <div class="gloss"><dt>К нюансів</dt><dd>Сума надбавок за нюанси проєкту (немає контенту, багато погоджувачів, NDA), додана до множника 1. Знижки за нюанси (аудит разом з дизайном, готова дизайн-система) рахуються окремо, всередині годин конкретного модуля.</dd></div>
+          </div>
+          <div class="ngroup">
+            <h3>Години</h3>
+            <div class="gloss"><dt>PM</dt><dd>Час на комунікацію з клієнтом: дзвінки, листування, погодження, менеджмент проєкту. Рахується як відсоток від годин модулів.</dd></div>
+            <div class="gloss"><dt>Буфер</dt><dd>Запас на правки та непередбачені ситуації, які завжди трапляються. Якщо аудит вимкнено, буфер автоматично більший — без аудиту легше промахнутися повз очікування клієнта.</dd></div>
+          </div>
+          <div class="ngroup">
+            <h3>Гроші</h3>
+            <div class="gloss"><dt>Мінімальний чек</dt><dd>Найменша сума, за яку береш проєкт. Якщо розрахунок виходить меншим — застосовується він, а не розрахунок.</dd></div>
+            <div class="gloss"><dt>Предоплата</dt><dd>Частка ціни, яку клієнт вносить перед стартом роботи.</dd></div>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <aside class="result" aria-live="polite">
+      <p class="res-label">Ціна для клієнта</p>
+      <p class="price" id="r-price">$0</p>
+      <div class="meta">
+        <span>Годин: <b id="r-hours">0</b></span>
+        <span>Предоплата <span id="r-pp-pct">50%</span>: <b id="r-prepay">$0</b></span>
+      </div>
+      <p class="flag" id="r-flag"></p>
+      <dl class="brk" id="r-brk"></dl>
+      <p class="fine" id="r-fine"></p>
+    </aside>
+  </div>
+</div>
+
+<div class="dock" aria-hidden="true">
+  <div><span class="dl">Ціна</span> <span class="dh" id="d-hours"></span></div>
+  <div class="dp" id="d-price">$0</div>
+</div>
+
+<script>
+(function () {
+  var DEF = function () {
+    return {
+      rate: 20, screens: 8, comps: 4, cx: 1, ur: 0, fixed: 0, min: 300,
+      on: { brief: 1, comp: 1, audit: 1, ia: 1, uid: 1, uim: 1, kit: 1, proto: 1, dev: 0 },
+      nu: { combo: 0, ds: 0, nocontent: 0, stake: 0, nda: 0 },
+      norms: { brief: [3, 0], comp: [0, 1.5], audit: [6, 1.2], ia: [0, 2], ui: [0, 3], kit: [12, 0], proto: [5, 0] },
+      par: { mob: 0.6, dev: 0.6, pm: 0.15, buf: 0.15, risk: 0.10, auditDisc: 0.10, dsDisc: 0.10, prepay: 0.5 },
+      cxList: [["Лендінг, є контент і референси", 1.0], ["E-commerce або багатосторінковий сайт", 1.2], ["Складний продукт (конфігуратор, кабінет)", 1.5]],
+      urList: [["Стандартний термін", 1.0], ["Менше 2 тижнів", 1.25], ["Менше тижня", 1.5]],
+      nuAdd: { nocontent: 0.15, stake: 0.10, nda: 0.15 }
+    };
+  };
+  var S = DEF();
+
+  var SCOPE = [
+    ["brief", "Бриф і старт", "Збір вимог і референсів, цілі проєкту, погодження обсягу робіт"],
+    ["comp", "Конкурентний аналіз", "Огляд рішень конкурентів: сильні й слабкі сторони, ідеї для бенчмарку"],
+    ["audit", "UX-аудит", "Розбір поточного інтерфейсу за екранами, проблемні місця, список рекомендацій"],
+    ["ia", "IA, user flows, вайрфрейми", "Структура сайту, сценарії користувача, низькодетальні макети екранів"],
+    ["uid", "UI десктоп", "Візуальний дизайн екранів для десктопної версії"],
+    ["uim", "UI мобільна версія", "Адаптація тих самих екранів під мобільні пристрої"],
+    ["kit", "UI-кіт / розширення дизайн-системи", "Компоненти, стилі й токени, які можна перевикористовувати далі"],
+    ["proto", "Клікабельний прототип", "Інтерактивний макет для демонстрації клієнту або юзер-тесту"],
+    ["dev", "Верстка (конструктор)", "Перенесення готового дизайну на сайт-конструктор"]
+  ];
+  var NUANCES = [
+    ["combo", "Аудит разом з дизайном", "знижка на аудит; діє, якщо аудит увімкнено"],
+    ["ds", "Є готова дизайн-система клієнта", "знижка на UI-кіт; діє, якщо UI-кіт увімкнено"],
+    ["nocontent", "Немає контенту чи брифу", "надбавка до коефіцієнта"],
+    ["stake", "Багато стейкхолдерів, які погоджують", "надбавка до коефіцієнта"],
+    ["nda", "NDA / заборона показувати в портфоліо", "надбавка до коефіцієнта"]
+  ];
+  var NORM_ROWS = [
+    ["brief", "Бриф і старт", "фікс"], ["comp", "Конкурентний аналіз", "на конкурента"],
+    ["audit", "UX-аудит (зі звітом)", "на екран"], ["ia", "IA, user flows, вайрфрейми", "на екран"],
+    ["ui", "UI десктоп", "на екран"], ["kit", "UI-кіт / дизайн-система", "фікс"], ["proto", "Клікабельний прототип", "фікс"]
+  ];
+  var PARAM_ROWS = [
+    ["mob", "Мобільна версія: частка від годин UI десктопа"], ["dev", "Верстка (Tilda): частка від годин UI"],
+    ["pm", "PM: комунікація, дзвінки, менеджмент"], ["buf", "Буфер на правки і ризики"],
+    ["risk", "Додатковий ризик, якщо немає аудиту"], ["auditDisc", "Знижка на аудит разом з дизайном"],
+    ["dsDisc", "Знижка на UI-кіт при готовій ДС клієнта"], ["prepay", "Частка предоплати"]
+  ];
+  var NU_ROWS = [["nocontent", "Немає контенту чи брифу"], ["stake", "Багато стейкхолдерів"], ["nda", "NDA / заборона показувати в портфоліо"]];
+
+  function $(s) { return document.querySelector(s); }
+  function getPath(p) { return p.split(".").reduce(function (o, k) { return o[k]; }, S); }
+  function setPath(p, v) {
+    var ks = p.split("."), last = ks.pop();
+    ks.reduce(function (o, k) { return o[k]; }, S)[last] = v;
+  }
+  var nf0 = new Intl.NumberFormat("uk-UA", { maximumFractionDigits: 0 });
+  var nf1 = new Intl.NumberFormat("uk-UA", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  var nf2 = new Intl.NumberFormat("uk-UA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function usd(x) { return "$" + nf0.format(x); }
+  function hrs(x) { return nf1.format(x); }
+  function pct(x) { return nf0.format(Math.round(x * 100)) + "%"; }
+
+  function calc() {
+    var n = S.screens, c = S.comps, N = S.norms, P = S.par, on = S.on, nu = S.nu, h = {};
+    var uiHrs = N.ui[0] + N.ui[1] * n;
+    h.brief = on.brief ? N.brief[0] + N.brief[1] * n : 0;
+    h.comp = on.comp ? N.comp[0] + N.comp[1] * c : 0;
+    h.audit = on.audit ? (N.audit[0] + N.audit[1] * n) * (1 - (nu.combo ? P.auditDisc : 0)) : 0;
+    h.ia = on.ia ? N.ia[0] + N.ia[1] * n : 0;
+    h.uid = on.uid ? uiHrs : 0;
+    h.uim = on.uim ? uiHrs * P.mob : 0;
+    h.kit = on.kit ? N.kit[0] * (1 - (nu.ds ? P.dsDisc : 0)) : 0;
+    h.proto = on.proto ? N.proto[0] : 0;
+    h.dev = on.dev ? (h.uid + h.uim) * P.dev : 0;
+    var base = 0; SCOPE.forEach(function (s) { base += h[s[0]]; });
+    var pm = base * P.pm;
+    var bufPct = P.buf + (on.audit ? 0 : P.risk);
+    var bufH = (base + pm) * bufPct;
+    var hp = base + pm + bufH;
+    var kc = S.cxList[S.cx][1], kt = S.urList[S.ur][1];
+    var kn = 1 + (nu.nocontent ? S.nuAdd.nocontent : 0) + (nu.stake ? S.nuAdd.stake : 0) + (nu.nda ? S.nuAdd.nda : 0);
+    var hours = hp * kc * kt * kn;
+    var work = hours * S.rate;
+    var sum = work + S.fixed;
+    var calcPrice = Math.round(sum / 10) * 10;
+    var price = Math.max(calcPrice, S.min);
+    return { h: h, base: base, pm: pm, bufPct: bufPct, bufH: bufH, hp: hp, kc: kc, kt: kt, kn: kn,
+      hours: hours, work: work, sum: sum, calcPrice: calcPrice, price: price,
+      prepay: Math.round(price * S.par.prepay), minApplied: S.min > calcPrice };
+  }
+
+  /* ---------- build static UI ---------- */
+  function buildScope() {
+    $("#scope").innerHTML = SCOPE.map(function (s) {
+      return '<div class="row" id="row-' + s[0] + '">' +
+        '<input class="switch" type="checkbox" role="switch" id="on-' + s[0] + '" data-path="on.' + s[0] + '">' +
+        '<label class="name" for="on-' + s[0] + '">' + s[1] + '<span class="hint">' + s[2] + '</span></label>' +
+        '<span class="val" id="h-' + s[0] + '"></span>' +
+        '<span class="bar"><i id="b-' + s[0] + '"></i></span></div>';
+    }).join("");
+    $("#nuances").innerHTML = NUANCES.map(function (s) {
+      return '<div class="row nu" id="nrow-' + s[0] + '">' +
+        '<input class="switch" type="checkbox" role="switch" id="nu-' + s[0] + '" data-path="nu.' + s[0] + '">' +
+        '<label class="name" for="nu-' + s[0] + '">' + s[1] + '<span class="hint">' + s[2] + '</span></label>' +
+        '<span class="val" id="nv-' + s[0] + '"></span></div>';
+    }).join("");
+  }
+  function buildSeg(id, key, listKey) {
+    $(id).innerHTML = S[listKey].map(function (it, i) {
+      return '<button type="button" id="' + key + '-' + i + '" data-seg="' + key + '" data-i="' + i + '">' +
+        '<span class="n">' + it[0] + '</span><span class="k" id="' + key + '-k' + i + '"></span></button>';
+    }).join("");
+  }
+  function numInput(id, path, scale, suffix) {
+    var inner = '<input type="number" inputmode="decimal" min="0" step="any" id="' + id + '" data-path="' + path + '"' +
+      (scale ? ' data-scale="' + scale + '"' : "") + '>';
+    return suffix ? '<span class="nwrap">' + inner + '<i>' + suffix + '</i></span>' : inner;
+  }
+  function buildNorms() {
+    var html = "";
+    html += '<p>Це орієнтири, а не ринковий стандарт. Підкоригуй під свою швидкість — усе перерахується.</p>';
+    html += '<div class="ngroup"><h3>Години по модулях</h3><div class="nrow head"><span></span><span>База, год</span><span>На одиницю</span></div>';
+    NORM_ROWS.forEach(function (r) {
+      html += '<div class="nrow"><span class="nm">' + r[1] + '<small>' + r[2] + '</small></span>' +
+        numInput("n-" + r[0] + "-0", "norms." + r[0] + ".0") + numInput("n-" + r[0] + "-1", "norms." + r[0] + ".1") + '</div>';
+    });
+    html += '</div><div class="ngroup"><h3>Параметри</h3>';
+    PARAM_ROWS.forEach(function (r) {
+      html += '<div class="nrow one"><span class="nm">' + r[1] + '</span>' + numInput("p-" + r[0], "par." + r[0], 100, "%") + '</div>';
+    });
+    html += '</div><div class="ngroup"><h3>Складність (Кс)</h3>';
+    S.cxList.forEach(function (r, i) {
+      html += '<div class="nrow one"><span class="nm">' + r[0] + '</span>' + numInput("cx-v" + i, "cxList." + i + ".1") + '</div>';
+    });
+    html += '</div><div class="ngroup"><h3>Терміновість (Кт)</h3>';
+    S.urList.forEach(function (r, i) {
+      html += '<div class="nrow one"><span class="nm">' + r[0] + '</span>' + numInput("ur-v" + i, "urList." + i + ".1") + '</div>';
+    });
+    html += '</div><div class="ngroup"><h3>Надбавки за нюанси</h3>';
+    NU_ROWS.forEach(function (r) {
+      html += '<div class="nrow one"><span class="nm">' + r[1] + '</span>' + numInput("na-" + r[0], "nuAdd." + r[0], 100, "%") + '</div>';
+    });
+    html += '</div><button class="btn" type="button" id="reset">Скинути до прикладу</button>';
+    $("#norms-body").innerHTML = html;
+  }
+
+  function syncInputs() {
+    document.querySelectorAll("[data-path]").forEach(function (el) {
+      var v = getPath(el.getAttribute("data-path"));
+      if (el.type === "checkbox") { el.checked = !!v; return; }
+      var sc = parseFloat(el.getAttribute("data-scale") || "1");
+      el.value = String(+(v * sc).toFixed(4));
+    });
+  }
+
+  /* ---------- update ---------- */
+  function update() {
+    var r = calc();
+    SCOPE.forEach(function (s) {
+      var k = s[0], on = !!S.on[k];
+      $("#h-" + k).textContent = on ? hrs(r.h[k]) + " год" : "—";
+      $("#row-" + k).classList.toggle("off", !on);
+    });
+    var mx = 0; SCOPE.forEach(function (s) { if (r.h[s[0]] > mx) mx = r.h[s[0]]; });
+    SCOPE.forEach(function (s) {
+      $("#b-" + s[0]).style.width = mx > 0 ? (r.h[s[0]] / mx * 100) + "%" : "0%";
+    });
+    var eff = {
+      combo: "−" + pct(S.par.auditDisc), ds: "−" + pct(S.par.dsDisc),
+      nocontent: "+" + pct(S.nuAdd.nocontent), stake: "+" + pct(S.nuAdd.stake), nda: "+" + pct(S.nuAdd.nda)
+    };
+    NUANCES.forEach(function (s) {
+      $("#nv-" + s[0]).textContent = eff[s[0]];
+      $("#nrow-" + s[0]).classList.toggle("off", !S.nu[s[0]]);
+    });
+    S.cxList.forEach(function (it, i) { $("#cx-k" + i).textContent = "Кс " + nf2.format(it[1]); });
+    S.urList.forEach(function (it, i) { $("#ur-k" + i).textContent = "Кт " + nf2.format(it[1]); });
+    document.querySelectorAll("[data-seg]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(S[b.getAttribute("data-seg")] === +b.getAttribute("data-i")));
+    });
+
+    $("#r-price").textContent = usd(r.price);
+    $("#r-hours").textContent = hrs(r.hours);
+    $("#r-prepay").textContent = usd(r.prepay);
+    $("#r-pp-pct").textContent = pct(S.par.prepay);
+    $("#d-price").textContent = usd(r.price);
+    $("#d-hours").textContent = hrs(r.hours) + " год";
+    var flag = $("#r-flag");
+    flag.classList.toggle("show", r.minApplied);
+    flag.textContent = r.minApplied ? "За розрахунком вийшло " + usd(r.calcPrice) + ", застосовано мінімальний чек " + usd(S.min) + "." : "";
+
+    var rows = [
+      ["", "Години модулів (база)", hrs(r.base)],
+      ["", "+ PM " + pct(S.par.pm), hrs(r.pm)],
+      ["", "+ буфер " + pct(r.bufPct), hrs(r.bufH)],
+      ["sum", "Години з PM і буфером", hrs(r.hp)],
+      ["", "× складність (Кс)", nf2.format(r.kc)],
+      ["", "× терміновість (Кт)", nf2.format(r.kt)],
+      ["", "× нюанси", nf2.format(r.kn)],
+      ["sum", "Підсумкові години", hrs(r.hours)],
+      ["", "× ставка " + usd(S.rate) + "/год", usd(r.work)],
+      ["", "+ фіксовані витрати", usd(S.fixed)]
+    ];
+    $("#r-brk").innerHTML = rows.map(function (x) {
+      return '<div class="' + x[0] + '"><dt>' + x[1] + '</dt><dd>' + x[2] + '</dd></div>';
+    }).join("");
+    $("#r-fine").textContent = "Перед відправкою клієнту: 2 раунди правок у ціні, додаткові — за ставкою; предоплата " +
+      pct(S.par.prepay) + "; ціна діє 14 днів. Клієнту показуй суму пакетом, розбивку — лише якщо просять.";
+  }
+
+  /* ---------- events ---------- */
+  document.addEventListener("input", function (e) {
+    var t = e.target;
+    if (!t.matches || !t.matches("[data-path]")) return;
+    var path = t.getAttribute("data-path");
+    if (t.type === "checkbox") setPath(path, t.checked ? 1 : 0);
+    else {
+      var sc = parseFloat(t.getAttribute("data-scale") || "1");
+      var v = parseFloat(String(t.value).replace(",", "."));
+      setPath(path, (isFinite(v) && v > 0 ? v : 0) / sc);
+    }
+    update();
+  });
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest ? e.target.closest("[data-seg]") : null;
+    if (b) { S[b.getAttribute("data-seg")] = +b.getAttribute("data-i"); update(); return; }
+    if (e.target.id === "reset") { S = DEF(); syncInputs(); update(); }
+  });
+
+  buildScope();
+  buildSeg("#seg-cx", "cx", "cxList");
+  buildSeg("#seg-ur", "ur", "urList");
+  buildNorms();
+  syncInputs();
+  update();
+})();
+</script>
